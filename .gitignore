@@ -1,0 +1,15 @@
+# Ignore environment files
+.env
+
+# Ignore build output
+bin/
+*.exe
+*.out
+
+# Go build cache
+*.test
+*.log
+
+# IDE / Editor settings
+.vscode/
+.idea/
