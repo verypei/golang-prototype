@@ -9,10 +9,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// func GetUsers() (string, error) {
-// 	log.Println("Service: Getting all users-----------")
-// 	return "ok", nil
-// }
+func GetUsersWithPagination(limit, offset int) ([]models.User, int, error) {
+	var users []models.User
+	var total int64
+
+	// get total count
+	if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// get paginated data
+	if err := database.DB.Limit(limit).Offset(offset).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, int(total), nil
+}
 
 func UserRegister(req dto.UserRegisterRequestDTO) (*models.User, error) {
 	// Check if email already exists

@@ -4,50 +4,57 @@ import (
 	"encoding/json"
 	"golang-prototype/dto"
 	"golang-prototype/services"
+	"golang-prototype/utils"
 	"log"
 	"net/http"
+	"strconv"
 )
 
-// func GetUsers(w http.ResponseWriter, r *http.Request) {
-// 	log.Println("Fetching all users----------------")
-// 	users, err := services.GetUsers()
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
+func GetUsers(w http.ResponseWriter, r *http.Request) {
+	log.Println("Fetching all users with meta ----------------")
 
-// 	w.Header().Set("Content-Type", "application/json")
-// 	json.NewEncoder(w).Encode(users)
-// }
+	// pagination params from query (default page=1, limit=10)
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
+	// fetch users & total count
+	users, total, err := services.GetUsersWithPagination(limit, offset)
+	if err != nil {
+		utils.Error(w, http.StatusInternalServerError, "Failed to fetch users")
+		return
+	}
+
+	// build meta info
+	meta := &dto.Meta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: (total + limit - 1) / limit, // ceiling division
+	}
+
+	utils.SuccessWithMeta(w, "Fetched users successfully", users, meta)
+}
 
 func UserRegister(w http.ResponseWriter, r *http.Request) {
 	// Decode request body into DTO
 	var req dto.UserRegisterRequestDTO
-	log.Println("Decoding request body----:", json.NewDecoder(r.Body))
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Println("❌ Failed to decode request:", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.Error(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	// Call service layer to create user
 	user, err := services.UserRegister(req)
 	if err != nil {
-		log.Println("❌ Service error:", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Map user model to response DTO
-	resp := dto.UserResponseDTO{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}
-
-	// Return JSON response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	utils.Success(w, "User registered successfully", user)
 }
