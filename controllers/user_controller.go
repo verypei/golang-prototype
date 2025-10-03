@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +42,25 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.SuccessWithMeta(w, "Fetched users successfully", users, meta)
+}
+
+func GetUserById(w http.ResponseWriter, r *http.Request) {
+	// ✅ Get param from Chi
+	idStr := chi.URLParam(r, "id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	user, err := services.GetUserByID(uint(id))
+	if err != nil {
+		utils.Error(w, http.StatusNotFound, "User not found")
+		return
+	}
+
+	utils.Success(w, "User fetched successfully", user)
 }
 
 func UserRegister(w http.ResponseWriter, r *http.Request) {

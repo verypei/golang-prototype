@@ -26,6 +26,14 @@ func GetUsersWithPagination(limit, offset int) ([]models.User, int, error) {
 	return users, int(total), nil
 }
 
+func GetUserByID(id uint) (*models.User, error) {
+	var user models.User
+	if err := database.DB.First(&user, id).Error; err != nil {
+		return nil, errors.New("user not found")
+	}
+	return &user, nil
+}
+
 func UserRegister(req dto.UserRegisterRequestDTO) (*models.User, error) {
 	// Check if email already exists
 	var existing models.User
